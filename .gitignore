@@ -1,0 +1,21 @@
+# Root GitIgnore for AegisFlow
+
+# Backend Ignores (Spring Boot / Maven)
+backend/target/
+backend/.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# Frontend Ignores (Node / React / Vite)
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+frontend/*.local
+
+# IDE & Editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*.DS_Store
+*.log
