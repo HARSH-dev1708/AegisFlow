@@ -3,6 +3,7 @@ import { securityApi } from '../services/securityApi';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { SkeletonLoader } from '../components/common/SkeletonLoader';
 import { ErrorState } from '../components/common/ErrorState';
+import { useAuth } from '../context/AuthContext';
 import {
   ShieldCheck,
   ShieldAlert,
@@ -20,6 +21,7 @@ import {
 } from 'lucide-react';
 
 export const Security = () => {
+  const { user } = useAuth();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -58,7 +60,7 @@ export const Security = () => {
       await securityApi.updateFindingStatus(id, newStatus);
       fetchSecurity();
     } catch (err) {
-      alert('Failed to update vulnerability status');
+      alert('Failed to update vulnerability status: ' + err.message);
     }
   };
 
@@ -96,13 +98,15 @@ export const Security = () => {
             Real-time SAST, DAST, OCI container scans, secret leak checks & CVE vulnerability grid.
           </p>
         </div>
-        <button
-          onClick={handleScan}
-          className="flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs font-semibold shadow-md transition-all"
-        >
-          <Play className="w-4 h-4 fill-white" />
-          Run Security Scan
-        </button>
+        {user?.role === 'ADMIN' && (
+          <button
+            onClick={handleScan}
+            className="flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs font-semibold shadow-md transition-all"
+          >
+            <Play className="w-4 h-4 fill-white" />
+            Run Security Scan
+          </button>
+        )}
       </div>
 
       {/* Top Overview Cards */}
@@ -257,7 +261,7 @@ export const Security = () => {
                   </td>
                   <td className="p-3 text-slate-500 dark:text-slate-400 text-[11px]">{vuln.action}</td>
                   <td className="p-3 text-right">
-                    {vuln.status !== 'RESOLVED' ? (
+                    {user?.role === 'ADMIN' && vuln.status !== 'RESOLVED' ? (
                       <button
                         onClick={() => handleStatusChange(vuln.id, 'RESOLVED')}
                         className="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-500/10 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30 rounded text-[11px] font-medium"

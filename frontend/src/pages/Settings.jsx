@@ -6,7 +6,6 @@ import { Settings as SettingsIcon, ShieldCheck, Server, Save, User } from 'lucid
 export const Settings = () => {
   const { user } = useAuth();
   const [apiUrl, setApiUrl] = useState(import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api');
-  const [jwtSecret, setJwtSecret] = useState('aegisflow_jwt_secret_key_prod_99');
   const [enableWebhooks, setEnableWebhooks] = useState(true);
   const [saved, setSaved] = useState(false);
 
@@ -41,7 +40,7 @@ export const Settings = () => {
             Platform & Engine Settings
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Spring Boot REST endpoint URLs, JWT token secret key, webhooks & organization parameters.
+            Spring Boot REST endpoint URL and webhooks. Authentication secrets are managed by the backend environment.
           </p>
         </div>
 
@@ -59,22 +58,13 @@ export const Settings = () => {
             <Server className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
             Spring Boot REST Backend Target
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+          <div className="grid grid-cols-1 gap-4 text-xs">
             <div className="space-y-1">
               <label className="text-slate-700 dark:text-slate-300 font-medium">API Base URL (`VITE_API_BASE_URL`)</label>
               <input
                 type="text"
                 value={apiUrl}
                 onChange={(e) => setApiUrl(e.target.value)}
-                className="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white font-mono focus:outline-none focus:border-cyan-500"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-slate-700 dark:text-slate-300 font-medium">JWT Token Secret Header</label>
-              <input
-                type="password"
-                value={jwtSecret}
-                onChange={(e) => setJwtSecret(e.target.value)}
                 className="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white font-mono focus:outline-none focus:border-cyan-500"
               />
             </div>

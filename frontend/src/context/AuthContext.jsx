@@ -1,48 +1,60 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authApi } from '../services/authApi';
+import { setAccessToken } from '../services/api';
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem('aegisflow_jwt_token') || null);
+  const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const initAuth = async () => {
-      if (token) {
-        try {
-          const userData = await authApi.getMe();
-          setUser(userData);
-        } catch {
-          // If token invalid, fallback to stored user or clear
-          const storedUser = localStorage.getItem('aegisflow_user');
-          if (storedUser) {
-            setUser(JSON.parse(storedUser));
-          } else {
-            logout();
-          }
-        }
-      }
-      setLoading(false);
+    let active = true;
+    const clearSession = () => {
+      setAccessToken(null);
+      setToken(null);
+      setUser(null);
     };
+    const initializeAuth = async () => {
+      try {
+        const data = await authApi.refresh();
+        if (!active) return;
+        setAccessToken(data.token);
+        setToken(data.token);
+        setUser(data.user);
+      } catch {
+        if (active) clearSession();
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+    const handleSessionExpired = () => clearSession();
 
-    initAuth();
-  }, [token]);
+    window.addEventListener('aegisflow:session-expired', handleSessionExpired);
+    initializeAuth();
+    return () => {
+      active = false;
+      window.removeEventListener('aegisflow:session-expired', handleSessionExpired);
+    };
+  }, []);
+
+  const clearSession = () => {
+    setAccessToken(null);
+    setToken(null);
+    setUser(null);
+  };
 
   const login = async (credentials) => {
     setLoading(true);
     try {
       const data = await authApi.login(credentials);
+      setAccessToken(data.token);
       setToken(data.token);
       setUser(data.user);
-      localStorage.setItem('aegisflow_jwt_token', data.token);
-      localStorage.setItem('aegisflow_user', JSON.stringify(data.user));
-      setLoading(false);
       return data;
-    } catch (err) {
+    } finally {
       setLoading(false);
-      throw err;
     }
   };
 
@@ -50,23 +62,21 @@ export const AuthProvider = ({ children }) => {
     setLoading(true);
     try {
       const data = await authApi.register(userData);
+      setAccessToken(data.token);
       setToken(data.token);
       setUser(data.user);
-      localStorage.setItem('aegisflow_jwt_token', data.token);
-      localStorage.setItem('aegisflow_user', JSON.stringify(data.user));
-      setLoading(false);
       return data;
-    } catch (err) {
+    } finally {
       setLoading(false);
-      throw err;
     }
   };
 
-  const logout = () => {
-    setUser(null);
-    setToken(null);
-    localStorage.removeItem('aegisflow_jwt_token');
-    localStorage.removeItem('aegisflow_user');
+  const logout = async () => {
+    try {
+      await authApi.logout();
+    } finally {
+      clearSession();
+    }
   };
 
   return (

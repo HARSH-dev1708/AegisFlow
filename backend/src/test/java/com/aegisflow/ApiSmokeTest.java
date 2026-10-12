@@ -5,6 +5,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.Test;
@@ -24,16 +25,7 @@ class ApiSmokeTest {
 
     @Test
     void frontendApiGroupsReturnJsonAndDemoLoginWorks() throws Exception {
-        for (String path : new String[]{
-                "/api/projects", "/api/pipelines", "/api/dashboard", "/api/security/overview",
-                "/api/security/findings", "/api/containers", "/api/deployments", "/api/monitoring/overview",
-                "/api/monitoring/cpu", "/api/monitoring/memory", "/api/monitoring/network",
-                "/api/monitoring/requests", "/api/monitoring/latency", "/api/monitoring/errors",
-                "/api/kubernetes/overview", "/api/kubernetes/nodes", "/api/kubernetes/pods",
-                "/api/kubernetes/deployments", "/api/kubernetes/services", "/api/kubernetes/namespaces",
-                "/api/logs", "/api/settings"}) {
-            mockMvc.perform(get(path)).andExpect(status().isOk());
-        }
+        mockMvc.perform(get("/api/projects")).andExpect(status().isUnauthorized());
 
         MvcResult login = mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -42,13 +34,28 @@ class ApiSmokeTest {
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.user.email").value("devops@aegisflow.io"))
+                .andExpect(header().string("Set-Cookie", org.hamcrest.Matchers.containsString("HttpOnly")))
                 .andReturn();
         String token = JsonPath.read(login.getResponse().getContentAsString(), "$.token");
+
+        for (String path : new String[]{
+                "/api/projects", "/api/pipelines", "/api/dashboard", "/api/security/overview",
+                "/api/security/findings", "/api/containers", "/api/deployments", "/api/monitoring/overview",
+                "/api/monitoring/cpu", "/api/monitoring/memory", "/api/monitoring/network",
+                "/api/monitoring/requests", "/api/monitoring/latency", "/api/monitoring/errors",
+                "/api/kubernetes/overview", "/api/kubernetes/nodes", "/api/kubernetes/pods",
+                "/api/kubernetes/deployments", "/api/kubernetes/services", "/api/kubernetes/namespaces",
+                "/api/logs", "/api/settings"}) {
+            mockMvc.perform(get(path).header("Authorization", "Bearer " + token))
+                    .andExpect(status().isOk());
+        }
+
         mockMvc.perform(get("/api/auth/me").header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.role").value("ADMIN"));
 
         mockMvc.perform(patch("/api/settings")
+                .header("Authorization", "Bearer " + token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {"apiBaseUrl":"http://localhost:8080/api","webhooksEnabled":false}

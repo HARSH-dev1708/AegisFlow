@@ -7,6 +7,7 @@ import com.aegisflow.repository.ProjectRepository;
 import com.aegisflow.repository.SecurityScanRepository;
 import com.aegisflow.repository.VulnerabilityRepository;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -61,6 +62,7 @@ public class SecurityController {
     }
 
     @PatchMapping("/findings/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public Map<String, Object> updateFinding(@PathVariable Long id, @RequestBody Map<String, Object> body) {
         Vulnerability finding = findFinding(id);
         finding.setStatus(ApiResponses.text(body, "status", finding.getStatus()));
@@ -68,6 +70,7 @@ public class SecurityController {
     }
 
     @PostMapping("/scan/{projectId}")
+    @PreAuthorize("hasRole('ADMIN')")
     public Map<String, Object> triggerScan(@PathVariable String projectId) {
         Project project = resolveProject(projectId);
         SecurityScan scan = scanRepository.save(new SecurityScan("SAST", "SAST", "RUNNING", null, project));

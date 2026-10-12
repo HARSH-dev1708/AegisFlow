@@ -1,6 +1,8 @@
 import axios from 'axios';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+let accessToken = null;
+let refreshPromise = null;
 
 export const api = axios.create({
   baseURL: BASE_URL,
@@ -8,30 +10,51 @@ export const api = axios.create({
     'Content-Type': 'application/json',
   },
   timeout: 8000,
+  withCredentials: true,
 });
 
-// Request Interceptor: Attach JWT Bearer Token
+export const setAccessToken = (token) => {
+  accessToken = token;
+};
+
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('aegisflow_jwt_token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    if (accessToken) {
+      config.headers.Authorization = `Bearer ${accessToken}`;
     }
     return config;
   },
   (error) => Promise.reject(error)
 );
 
-// Response Interceptor: Global Error Handler & Logging
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      // Clear token on 401 Unauthorized if needed
-      localStorage.removeItem('aegisflow_jwt_token');
-      localStorage.removeItem('aegisflow_user');
+  async (error) => {
+    const request = error.config;
+    const isAuthRequest = request?.url?.includes('/auth/');
+    if (error.response?.status !== 401 || !request || request._retry || isAuthRequest) {
+      return Promise.reject(error);
     }
-    return Promise.reject(error);
+
+    request._retry = true;
+    try {
+      refreshPromise ??= axios.post(`${BASE_URL}/auth/refresh`, {}, {
+        withCredentials: true,
+        timeout: 8000,
+      }).then(({ data }) => {
+        setAccessToken(data.token);
+        return data.token;
+      }).finally(() => {
+        refreshPromise = null;
+      });
+      const refreshedToken = await refreshPromise;
+      request.headers.Authorization = `Bearer ${refreshedToken}`;
+      return api(request);
+    } catch (refreshError) {
+      setAccessToken(null);
+      window.dispatchEvent(new Event('aegisflow:session-expired'));
+      return Promise.reject(refreshError);
+    }
   }
 );
 

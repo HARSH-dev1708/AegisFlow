@@ -44,9 +44,14 @@ export const MainLayout = () => {
     { label: 'Logs', path: '/logs', icon: Terminal },
   ];
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch {
+      window.alert('The server could not revoke this refresh session; it may remain usable until it expires.');
+    } finally {
+      navigate('/login');
+    }
   };
 
   return (
@@ -177,7 +182,7 @@ export const MainLayout = () => {
             })}
           </div>
 
-          <div className="pt-4 border-t border-slate-200 dark:border-zinc-800/80">
+          {user?.role === 'ADMIN' && <div className="pt-4 border-t border-slate-200 dark:border-zinc-800/80">
             <NavLink
               to="/settings"
               className={({ isActive }) =>
@@ -191,7 +196,7 @@ export const MainLayout = () => {
               <Settings className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
               <span>Settings</span>
             </NavLink>
-          </div>
+          </div>}
         </aside>
 
         {/* MOBILE DRAWER */}
@@ -231,7 +236,7 @@ export const MainLayout = () => {
                 })}
               </div>
 
-              <div className="pt-4 border-t border-slate-200 dark:border-zinc-800/80">
+              {user?.role === 'ADMIN' && <div className="pt-4 border-t border-slate-200 dark:border-zinc-800/80">
                 <NavLink
                   to="/settings"
                   onClick={() => setMobileMenuOpen(false)}
@@ -240,7 +245,7 @@ export const MainLayout = () => {
                   <Settings className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
                   <span>Settings</span>
                 </NavLink>
-              </div>
+              </div>}
             </div>
           </div>
         )}

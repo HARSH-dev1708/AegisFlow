@@ -1,6 +1,7 @@
 package com.aegisflow.controller;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -28,6 +29,7 @@ public class SettingsController {
     }
 
     @PatchMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public Map<String, Object> updateSettings(@RequestBody Map<String, Object> body) {
         Object enabled = body.get("webhooksEnabled");
         if (enabled instanceof Boolean value) webhooksEnabled.set(value);

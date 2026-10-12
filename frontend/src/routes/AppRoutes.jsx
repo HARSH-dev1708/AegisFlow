@@ -36,6 +36,11 @@ const ProtectedRoute = ({ children }) => {
   return children;
 };
 
+const RoleRoute = ({ children, requiredRole }) => {
+  const { user } = useAuth();
+  return user?.role === requiredRole ? children : <Navigate to="/dashboard" replace />;
+};
+
 export const AppRoutes = () => {
   return (
     <Routes>
@@ -63,7 +68,14 @@ export const AppRoutes = () => {
         <Route path="/deployments" element={<Deployments />} />
         <Route path="/monitoring" element={<Monitoring />} />
         <Route path="/logs" element={<Logs />} />
-        <Route path="/settings" element={<Settings />} />
+        <Route
+          path="/settings"
+          element={
+            <RoleRoute requiredRole="ADMIN">
+              <Settings />
+            </RoleRoute>
+          }
+        />
       </Route>
 
       <Route path="*" element={<Navigate to="/dashboard" replace />} />

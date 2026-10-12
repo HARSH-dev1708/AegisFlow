@@ -32,21 +32,12 @@ export const securityApi = {
   },
 
   triggerScan: async (projectId) => {
-    try {
-      const res = await api.post(`/security/scan/${projectId}`);
-      return res.data;
-    } catch {
-      return { success: true, message: `Security scan initiated for project ${projectId}` };
-    }
+    const res = await api.post(`/security/scan/${projectId}`);
+    return res.data;
   },
 
   updateFindingStatus: async (id, status) => {
-    try {
-      const res = await api.patch(`/security/findings/${id}`, { status });
-      return res.data;
-    } catch {
-      localSecurity.vulnerabilities = localSecurity.vulnerabilities.map(v => v.id === id ? { ...v, status } : v);
-      return localSecurity.vulnerabilities.find(v => v.id === id);
-    }
+    const res = await api.patch(`/security/findings/${id}`, { status });
+    return res.data;
   }
 };
