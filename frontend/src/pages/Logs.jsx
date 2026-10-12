@@ -23,6 +23,7 @@ export const Logs = () => {
   const logsEndRef = useRef(null);
 
   const fetchLogs = async () => {
+    setError(null);
     try {
       const data = await logApi.getLogs({ search, level: levelFilter });
       setLogs(data);
@@ -37,32 +38,19 @@ export const Logs = () => {
     fetchLogs();
   }, [search, levelFilter]);
 
-  // Live log generator simulation
   useEffect(() => {
     if (!isStreaming) return;
     const interval = setInterval(() => {
-      const services = ['AuthService', 'ContainerRuntime', 'KubeController', 'IngressRouter', 'PipelineEngine'];
-      const levels = ['INFO', 'INFO', 'INFO', 'WARN', 'ERROR'];
-      const messages = [
-        'Health check ping responded with 200 OK',
-        'Incoming OAuth token verified successfully',
-        'Ingress connection pool active (32 concurrent workers)',
-        'High latency detected on internal microservice bridge (112ms)',
-        'Container memory utilization reached 78% threshold'
-      ];
-
-      const idx = Math.floor(Math.random() * services.length);
-      const newEntry = logApi.addLogEntry({
-        level: levels[idx],
-        service: services[idx],
-        message: messages[idx]
-      });
-
-      setLogs((prev) => [...prev, newEntry]);
+      logApi.getLogs({ search, level: levelFilter })
+        .then((data) => {
+          setLogs(data);
+          setError(null);
+        })
+        .catch((err) => setError(err.message || 'Failed to refresh logs'));
     }, 4000);
 
     return () => clearInterval(interval);
-  }, [isStreaming]);
+  }, [isStreaming, search, levelFilter]);
 
   useEffect(() => {
     if (autoScroll && logsEndRef.current) {

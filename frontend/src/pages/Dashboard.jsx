@@ -60,13 +60,14 @@ export const Dashboard = () => {
   if (error) return <ErrorState message={error} onRetry={fetchDashboard} />;
 
   const kpis = [
-    { title: 'Projects', value: data?.projects || 12, trend: data?.trends?.projects, icon: FolderGit2, color: 'blue' },
-    { title: 'Active Pipelines', value: data?.activePipelines || 5, trend: data?.trends?.activePipelines, icon: GitPullRequest, color: 'cyan' },
-    { title: 'Security Issues', value: data?.securityIssues || 8, trend: data?.trends?.securityIssues, icon: ShieldAlert, color: 'rose' },
-    { title: 'Running Containers', value: data?.runningContainers || 24, trend: data?.trends?.runningContainers, icon: Box, color: 'emerald' },
-    { title: 'Kubernetes Pods', value: data?.kubernetesPods || 42, trend: data?.trends?.kubernetesPods, icon: Layers, color: 'purple' },
-    { title: 'Deployments', value: data?.deployments || 18, trend: data?.trends?.deployments, icon: Rocket, color: 'amber' }
+    { title: 'Projects', value: data?.projects ?? 0, trend: data?.trends?.projects, icon: FolderGit2, color: 'blue' },
+    { title: 'Active Pipelines', value: data?.activePipelines ?? 0, trend: data?.trends?.activePipelines, icon: GitPullRequest, color: 'cyan' },
+    { title: 'Security Issues', value: data?.securityIssues ?? 0, trend: data?.trends?.securityIssues, icon: ShieldAlert, color: 'rose' },
+    { title: 'Running Containers', value: data?.runningContainers ?? 0, trend: data?.trends?.runningContainers, icon: Box, color: 'emerald' },
+    { title: 'Kubernetes Pods', value: data?.kubernetesPods ?? 0, trend: data?.trends?.kubernetesPods, icon: Layers, color: 'purple' },
+    { title: 'Deployments', value: data?.deployments ?? 0, trend: data?.trends?.deployments, icon: Rocket, color: 'amber' }
   ];
+  const score = data?.securityScore ?? 0;
 
   return (
     <div className="space-y-8">
@@ -113,11 +114,11 @@ export const Dashboard = () => {
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Overall Security Score</span>
               <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
-                87 / 100 Grade A
+                {score} / 100
               </span>
             </div>
             <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">
-              All SAST and Secret scanners are operational. 1 critical CVE requires container runtime update.
+              {data?.securityIssues ?? 0} unresolved security findings are stored across your projects.
             </p>
           </div>
         </div>
@@ -146,7 +147,7 @@ export const Dashboard = () => {
               <Rocket className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
               Deployment Activity (24H)
             </h3>
-            <span className="text-[11px] text-slate-500 dark:text-slate-400">Live Telemetry</span>
+            <span className="text-[11px] text-slate-500 dark:text-slate-400">Last 24 hours</span>
           </div>
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -169,7 +170,9 @@ export const Dashboard = () => {
               <GitPullRequest className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
               Pipeline Success Distribution
             </h3>
-            <span className="text-[11px] text-slate-500 dark:text-slate-400">Total 56 Builds</span>
+            <span className="text-[11px] text-slate-500 dark:text-slate-400">
+              Total {(data?.pipelineSuccessRate || []).reduce((total, entry) => total + entry.value, 0)} Builds
+            </span>
           </div>
           <div className="h-64 w-full flex items-center justify-center">
             <ResponsiveContainer width="100%" height="100%">

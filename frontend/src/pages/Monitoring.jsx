@@ -43,6 +43,16 @@ export const Monitoring = () => {
   if (loading) return <SkeletonLoader count={4} type="card" />;
   if (error) return <ErrorState message={error} onRetry={fetchMetrics} />;
 
+  const latest = (values) => values?.at(-1);
+  const averageCpu = data?.cpu?.length
+    ? (data.cpu.reduce((sum, point) => sum + point.value, 0) / data.cpu.length).toFixed(1)
+    : '--';
+  const latestMemory = latest(data?.memory)?.value;
+  const latestNetwork = latest(data?.network);
+  const latestRequest = latest(data?.requests)?.rps;
+  const latestLatency = latest(data?.latency);
+  const latestErrorRate = latest(data?.errors)?.value;
+
   return (
     <div className="space-y-6">
       {/* Header & Time Filters */}
@@ -84,7 +94,7 @@ export const Monitoring = () => {
               <Cpu className="w-4 h-4 text-blue-500" />
               CPU Utilization (%)
             </h3>
-            <span className="text-[11px] font-mono text-cyan-600 dark:text-cyan-400 font-bold">Avg 43.2%</span>
+            <span className="text-[11px] font-mono text-cyan-600 dark:text-cyan-400 font-bold">Avg {averageCpu}%</span>
           </div>
           <div className="h-56 w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -106,7 +116,9 @@ export const Monitoring = () => {
               <HardDrive className="w-4 h-4 text-purple-500" />
               Memory Allocation (GB)
             </h3>
-            <span className="text-[11px] font-mono text-purple-600 dark:text-purple-400 font-bold">4.6 GB / 16 GB</span>
+            <span className="text-[11px] font-mono text-purple-600 dark:text-purple-400 font-bold">
+              {latestMemory ?? '--'} GB
+            </span>
           </div>
           <div className="h-56 w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -128,7 +140,9 @@ export const Monitoring = () => {
               <Network className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
               Network I/O Throughput (MB/s)
             </h3>
-            <span className="text-[11px] font-mono text-cyan-600 dark:text-cyan-400 font-bold">190 In / 450 Out</span>
+            <span className="text-[11px] font-mono text-cyan-600 dark:text-cyan-400 font-bold">
+              {latestNetwork?.in ?? '--'} In / {latestNetwork?.out ?? '--'} Out
+            </span>
           </div>
           <div className="h-56 w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -151,7 +165,9 @@ export const Monitoring = () => {
               <Zap className="w-4 h-4 text-amber-500" />
               HTTP Request Throughput (Req/Sec)
             </h3>
-            <span className="text-[11px] font-mono text-amber-600 dark:text-amber-400 font-bold">1,890 RPS</span>
+            <span className="text-[11px] font-mono text-amber-600 dark:text-amber-400 font-bold">
+              {latestRequest ?? '--'} RPS
+            </span>
           </div>
           <div className="h-56 w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -173,7 +189,9 @@ export const Monitoring = () => {
               <Clock className="w-4 h-4 text-emerald-500" />
               Latency Percentiles (ms)
             </h3>
-            <span className="text-[11px] font-mono text-emerald-600 dark:text-emerald-400 font-bold">p50: 13ms | p99: 130ms</span>
+            <span className="text-[11px] font-mono text-emerald-600 dark:text-emerald-400 font-bold">
+              p50: {latestLatency?.p50 ?? '--'}ms | p99: {latestLatency?.p99 ?? '--'}ms
+            </span>
           </div>
           <div className="h-56 w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -197,7 +215,9 @@ export const Monitoring = () => {
               <AlertTriangle className="w-4 h-4 text-rose-500" />
               HTTP 5xx Error Rate (%)
             </h3>
-            <span className="text-[11px] font-mono text-emerald-600 dark:text-emerald-400 font-bold">0.03% SLI Target</span>
+            <span className="text-[11px] font-mono text-emerald-600 dark:text-emerald-400 font-bold">
+              {latestErrorRate ?? '--'}%
+            </span>
           </div>
           <div className="h-56 w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -206,7 +226,7 @@ export const Monitoring = () => {
                 <XAxis dataKey="timestamp" stroke="#64748b" fontSize={11} />
                 <YAxis stroke="#64748b" fontSize={11} unit="%" />
                 <Tooltip contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', borderRadius: '8px', color: '#fff', fontSize: '12px' }} />
-                <Area type="monotone" dataKey="rate" stroke="#f43f5e" fill="#f43f5e" fillOpacity={0.15} name="Error Rate %" />
+                <Area type="monotone" dataKey="value" stroke="#f43f5e" fill="#f43f5e" fillOpacity={0.15} name="Error Rate %" />
               </AreaChart>
             </ResponsiveContainer>
           </div>

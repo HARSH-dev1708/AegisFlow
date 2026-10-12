@@ -3,9 +3,11 @@ package com.aegisflow.controller;
 import com.aegisflow.domain.Cluster;
 import com.aegisflow.domain.Deployment;
 import com.aegisflow.domain.KubernetesPod;
+import com.aegisflow.domain.KubernetesService;
 import com.aegisflow.repository.ClusterRepository;
 import com.aegisflow.repository.DeploymentRepository;
 import com.aegisflow.repository.KubernetesPodRepository;
+import com.aegisflow.repository.KubernetesServiceRepository;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -21,21 +23,31 @@ public class KubernetesController {
 
     private final ClusterRepository clusterRepository;
     private final KubernetesPodRepository podRepository;
+    private final KubernetesServiceRepository serviceRepository;
     private final DeploymentRepository deploymentRepository;
 
     public KubernetesController(ClusterRepository clusterRepository, KubernetesPodRepository podRepository,
-                                DeploymentRepository deploymentRepository) {
+                                KubernetesServiceRepository serviceRepository, DeploymentRepository deploymentRepository) {
         this.clusterRepository = clusterRepository;
         this.podRepository = podRepository;
+        this.serviceRepository = serviceRepository;
         this.deploymentRepository = deploymentRepository;
     }
 
     @GetMapping("/overview")
     public Map<String, Object> getOverview() {
-        return ApiResponses.map("status", clusterRepository.findAll().stream().allMatch(cluster -> "HEALTHY".equalsIgnoreCase(cluster.getStatus()) || "READY".equalsIgnoreCase(cluster.getStatus())) ? "Healthy" : "Warning",
+        long namespaceCount = java.util.stream.Stream.concat(
+                        podRepository.findAll().stream().map(KubernetesPod::getNamespace),
+                        serviceRepository.findAll().stream().map(KubernetesService::getNamespace))
+                .distinct().count();
+        List<Cluster> clusters = clusterRepository.findAll();
+        String status = clusters.isEmpty() ? "Unknown"
+                : clusters.stream().allMatch(cluster -> "HEALTHY".equalsIgnoreCase(cluster.getStatus())
+                || "READY".equalsIgnoreCase(cluster.getStatus())) ? "Healthy" : "Warning";
+        return ApiResponses.map("status", status,
                 "nodes", clusterRepository.count(), "pods", podRepository.count(),
-                "deployments", deploymentRepository.count(), "services", 0,
-                "namespaces", podRepository.findAll().stream().map(KubernetesPod::getNamespace).distinct().count());
+                "deployments", deploymentRepository.count(), "services", serviceRepository.count(),
+                "namespaces", namespaceCount);
     }
 
     @GetMapping("/nodes")
@@ -63,12 +75,19 @@ public class KubernetesController {
 
     @GetMapping("/services")
     public List<Map<String, Object>> getServices() {
-        return List.of();
+        return serviceRepository.findAll().stream()
+                .map(service -> ApiResponses.map("id", service.getId(), "name", service.getName(),
+                        "namespace", service.getNamespace(), "type", service.getType(),
+                        "clusterIp", service.getClusterIp(), "port", service.getPort()))
+                .toList();
     }
 
     @GetMapping("/namespaces")
     public List<Map<String, Object>> getNamespaces() {
-        return podRepository.findAll().stream().map(KubernetesPod::getNamespace).distinct()
+        return java.util.stream.Stream.concat(
+                        podRepository.findAll().stream().map(KubernetesPod::getNamespace),
+                        serviceRepository.findAll().stream().map(KubernetesService::getNamespace))
+                .distinct()
                 .map(namespace -> ApiResponses.map("name", namespace, "status", "Active", "age", "--")).toList();
     }
 

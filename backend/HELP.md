@@ -22,18 +22,25 @@ The following guides illustrate how to use some features concretely:
 
 The API requires a strong signing secret in `AEGISFLOW_JWT_SECRET` (at least 32 bytes). For local HTTP development, set `AUTH_COOKIE_SECURE=false`; use `true` behind HTTPS. Set `CORS_ALLOWED_ORIGINS` to a comma-separated list of exact frontend origins when they differ from the Vite defaults.
 
-For example, from `backend/`:
+### Local database
+
+The default `local` profile uses embedded, file-backed H2 at `backend/data/aegisflow` and applies schema migrations with Flyway at startup. No database server or account needs to be installed for local development. Local demo data, including the demo administrator, is inserted only when the database has no projects. Demo login: `devops@aegisflow.io` / `password123`. Keep this account and local profile out of non-local deployments.
+
+To start locally from `backend/`:
 
 ```sh
 export AEGISFLOW_JWT_SECRET="$(openssl rand -base64 48)"
 export AUTH_COOKIE_SECURE=false
-export BOOTSTRAP_ADMIN_ENABLED=true
-export BOOTSTRAP_ADMIN_EMAIL=admin@example.com
-export BOOTSTRAP_ADMIN_PASSWORD='choose-a-unique-password'
 ./mvnw spring-boot:run
 ```
 
-The optional bootstrap creates or promotes the configured account to `ADMIN` at startup. Public registrations receive the `DEVELOPER` role. Demo data, including the sample admin credentials, is disabled by default; enable `aegisflow.demo-data.enabled=true` only in a disposable local environment. Access JWTs last 15 minutes. Refresh tokens are rotated, stored only as hashes in the database, and delivered in an HttpOnly cookie for seven days. Configure persistent storage before using this setup beyond local development.
+H2 files are ignored by Git. To start with an empty local dataset, stop the backend and remove only the local database files under `backend/data/`; Flyway will recreate the schema and local seed data on next start.
+
+The schema is managed by versioned Flyway scripts in `src/main/resources/db/migration`. Add a new `V<number>__description.sql` migration for each schema change; do not edit a migration that has already run on a database. Hibernate validates the migrated schema at startup and does not create or drop tables.
+
+For a future PostgreSQL or MySQL deployment, provision the database and credentials, add the matching JDBC driver, and set `DB_URL`, `DB_DRIVER`, `DB_USERNAME`, and `DB_PASSWORD`. Set `aegisflow.demo-data.enabled=false` (or use a non-local profile), keep `AEGISFLOW_JWT_SECRET` strong and private, and run Flyway migrations during deployment. Review vendor-specific SQL and add Flyway vendor-specific migration locations when a migration is not portable. Do not point production at the local H2 file.
+
+Public registrations receive the `DEVELOPER` role. The optional bootstrap creates or promotes a configured account to `ADMIN` when `BOOTSTRAP_ADMIN_ENABLED=true`; configure its email and password only in a secret manager/environment. Access JWTs last 15 minutes. Refresh tokens are rotated, stored only as hashes in the database, and delivered in an HttpOnly cookie for seven days.
 
 ### Maven Parent overrides
 

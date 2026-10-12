@@ -68,6 +68,10 @@ export const Security = () => {
   if (error) return <ErrorState message={error} onRetry={fetchSecurity} />;
 
   const vulnerabilities = data?.vulnerabilities || [];
+  const severityCount = (severity) => vulnerabilities.filter(
+    (vulnerability) => vulnerability.severity === severity
+  ).length;
+  const criticalFinding = vulnerabilities.find((vulnerability) => vulnerability.severity === 'CRITICAL');
   const filtered = vulnerabilities.filter((v) => {
     const matchesSearch =
       v.cve.toLowerCase().includes(search.toLowerCase()) ||
@@ -115,17 +119,19 @@ export const Security = () => {
         <div className="md:col-span-2 bg-white dark:bg-[#111827] p-6 rounded-2xl border border-cyan-500/30 flex items-center justify-around shadow-sm">
           <div className="relative flex items-center justify-center">
             <div className="w-28 h-28 rounded-full border-8 border-cyan-500/20 border-t-cyan-500 border-r-cyan-500 flex flex-col items-center justify-center">
-              <span className="text-3xl font-extrabold text-slate-900 dark:text-white">{data?.score || 87}</span>
+              <span className="text-3xl font-extrabold text-slate-900 dark:text-white">{data?.score ?? 0}</span>
               <span className="text-[10px] text-cyan-600 dark:text-cyan-400 uppercase font-bold tracking-wider">Score</span>
             </div>
           </div>
           <div className="space-y-1 text-left">
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white">Posture: Optimal</h3>
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+              Posture: {(data?.score ?? 0) >= 85 ? 'Healthy' : (data?.score ?? 0) >= 65 ? 'Needs attention' : 'At risk'}
+            </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs">
-              Continuous AST posture score calculated across 12 connected cloud projects.
+              Score is calculated from the findings stored in the database.
             </p>
             <span className="inline-block mt-2 px-2.5 py-1 rounded bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30 text-[11px] font-semibold">
-              SOC2 & ISO 27001 Compliant
+              {vulnerabilities.length} Stored Findings
             </span>
           </div>
         </div>
@@ -137,8 +143,8 @@ export const Security = () => {
               <span className="text-xs font-bold uppercase">Critical</span>
               <AlertOctagon className="w-4 h-4" />
             </div>
-            <div className="text-2xl font-extrabold text-slate-900 dark:text-white mt-2">1</div>
-            <span className="text-[10px] text-rose-600 dark:text-rose-300">CVE-2024-21626</span>
+            <div className="text-2xl font-extrabold text-slate-900 dark:text-white mt-2">{severityCount('CRITICAL')}</div>
+            <span className="text-[10px] text-rose-600 dark:text-rose-300">{criticalFinding?.cve ?? 'No critical findings'}</span>
           </div>
 
           <div className="bg-white dark:bg-[#111827] p-4 rounded-xl border border-orange-200 dark:border-orange-900/40 flex flex-col justify-between shadow-sm">
@@ -146,8 +152,8 @@ export const Security = () => {
               <span className="text-xs font-bold uppercase">High</span>
               <AlertTriangle className="w-4 h-4" />
             </div>
-            <div className="text-2xl font-extrabold text-slate-900 dark:text-white mt-2">3</div>
-            <span className="text-[10px] text-orange-600 dark:text-orange-300">Patch required</span>
+            <div className="text-2xl font-extrabold text-slate-900 dark:text-white mt-2">{severityCount('HIGH')}</div>
+            <span className="text-[10px] text-orange-600 dark:text-orange-300">High severity</span>
           </div>
 
           <div className="bg-white dark:bg-[#111827] p-4 rounded-xl border border-yellow-200 dark:border-yellow-900/40 flex flex-col justify-between shadow-sm">
@@ -155,8 +161,8 @@ export const Security = () => {
               <span className="text-xs font-bold uppercase">Medium</span>
               <ShieldAlert className="w-4 h-4" />
             </div>
-            <div className="text-2xl font-extrabold text-slate-900 dark:text-white mt-2">4</div>
-            <span className="text-[10px] text-yellow-600 dark:text-yellow-300">Dep scans</span>
+            <div className="text-2xl font-extrabold text-slate-900 dark:text-white mt-2">{severityCount('MEDIUM')}</div>
+            <span className="text-[10px] text-yellow-600 dark:text-yellow-300">Medium severity</span>
           </div>
 
           <div className="bg-white dark:bg-[#111827] p-4 rounded-xl border border-blue-200 dark:border-blue-900/40 flex flex-col justify-between shadow-sm">
@@ -164,8 +170,8 @@ export const Security = () => {
               <span className="text-xs font-bold uppercase">Low</span>
               <Info className="w-4 h-4" />
             </div>
-            <div className="text-2xl font-extrabold text-slate-900 dark:text-white mt-2">8</div>
-            <span className="text-[10px] text-blue-600 dark:text-blue-300">Informational</span>
+            <div className="text-2xl font-extrabold text-slate-900 dark:text-white mt-2">{severityCount('LOW')}</div>
+            <span className="text-[10px] text-blue-600 dark:text-blue-300">Low severity</span>
           </div>
         </div>
       </div>

@@ -133,16 +133,16 @@ export const ProjectDetails = () => {
           <div className="bg-white dark:bg-[#111827] p-5 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2 shadow-sm">
             <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Security Score</span>
             <div className="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400">{project.securityScore} / 100</div>
-            <p className="text-xs text-slate-500 dark:text-slate-400">SAST & secrets scans active with 0 blocking CVEs.</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Calculated from this project&apos;s stored security findings.</p>
           </div>
           <div className="bg-white dark:bg-[#111827] p-5 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2 shadow-sm">
             <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Containers Active</span>
-            <div className="text-3xl font-extrabold text-cyan-600 dark:text-cyan-400">{project.containersCount || 4} Instances</div>
+            <div className="text-3xl font-extrabold text-cyan-600 dark:text-cyan-400">{project.containersCount ?? 0} Instances</div>
             <p className="text-xs text-slate-500 dark:text-slate-400">Docker image v1.8.2 running cleanly.</p>
           </div>
           <div className="bg-white dark:bg-[#111827] p-5 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2 shadow-sm">
             <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Kubernetes Pods</span>
-            <div className="text-3xl font-extrabold text-purple-600 dark:text-purple-400">{project.podsCount || 8} Replicas</div>
+            <div className="text-3xl font-extrabold text-purple-600 dark:text-purple-400">{project.podsCount ?? 0} Replicas</div>
             <p className="text-xs text-slate-500 dark:text-slate-400">Ingress router healthy with 99.9% uptime.</p>
           </div>
         </div>

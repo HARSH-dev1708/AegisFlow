@@ -97,7 +97,7 @@ public class MonitoringController {
             case "7D" -> 168;
             default -> 1;
         });
-        return metricRepository.findAll().stream().filter(metric -> metric.getCapturedAt().isAfter(cutoff)).toList();
+        return metricRepository.findByCapturedAtAfterOrderByCapturedAtAsc(cutoff);
     }
 
     private static List<Map<String, Object>> values(List<MonitoringMetric> metrics, String name) {

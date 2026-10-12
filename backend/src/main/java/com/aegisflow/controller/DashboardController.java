@@ -33,7 +33,7 @@ public class DashboardController {
     private final ContainerRepository containerRepository;
     private final KubernetesPodRepository podRepository;
     private final DeploymentRepository deploymentRepository;
-        private final MonitoringMetricRepository metricRepository;
+    private final MonitoringMetricRepository metricRepository;
 
     public DashboardController(ProjectRepository projectRepository, PipelineRepository pipelineRepository,
                                VulnerabilityRepository vulnerabilityRepository, ContainerRepository containerRepository,

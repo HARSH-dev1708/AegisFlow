@@ -22,7 +22,10 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.http.MediaType;
 
-@SpringBootTest(properties = "aegisflow.demo-data.enabled=false")
+@SpringBootTest(properties = {
+        "aegisflow.demo-data.enabled=false",
+        "spring.datasource.url=jdbc:h2:mem:project-api-test;DB_CLOSE_DELAY=-1;MODE=PostgreSQL"
+})
 @AutoConfigureMockMvc
 class ProjectApiTest {
 

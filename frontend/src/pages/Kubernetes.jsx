@@ -75,7 +75,7 @@ export const Kubernetes = () => {
               Kubernetes Cluster Control
             </h1>
             <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30 flex items-center gap-1">
-              <CheckCircle2 className="w-3.5 h-3.5" /> Cluster Healthy
+              <CheckCircle2 className="w-3.5 h-3.5" /> {overview?.status ?? 'Unknown'}
             </span>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
@@ -88,23 +88,23 @@ export const Kubernetes = () => {
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         <div className="bg-white dark:bg-[#111827] p-4 rounded-xl border border-slate-200 dark:border-slate-800 space-y-1 shadow-sm">
           <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Nodes</span>
-          <div className="text-2xl font-extrabold text-slate-900 dark:text-white">{overview?.nodes || 5}</div>
+          <div className="text-2xl font-extrabold text-slate-900 dark:text-white">{overview?.nodes ?? 0}</div>
         </div>
         <div className="bg-white dark:bg-[#111827] p-4 rounded-xl border border-slate-200 dark:border-slate-800 space-y-1 shadow-sm">
           <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Pods</span>
-          <div className="text-2xl font-extrabold text-cyan-600 dark:text-cyan-400">{overview?.pods || 42}</div>
+          <div className="text-2xl font-extrabold text-cyan-600 dark:text-cyan-400">{overview?.pods ?? 0}</div>
         </div>
         <div className="bg-white dark:bg-[#111827] p-4 rounded-xl border border-slate-200 dark:border-slate-800 space-y-1 shadow-sm">
           <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Deployments</span>
-          <div className="text-2xl font-extrabold text-purple-600 dark:text-purple-400">{overview?.deployments || 15}</div>
+          <div className="text-2xl font-extrabold text-purple-600 dark:text-purple-400">{overview?.deployments ?? 0}</div>
         </div>
         <div className="bg-white dark:bg-[#111827] p-4 rounded-xl border border-slate-200 dark:border-slate-800 space-y-1 shadow-sm">
           <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Services</span>
-          <div className="text-2xl font-extrabold text-blue-600 dark:text-blue-400">{overview?.services || 18}</div>
+          <div className="text-2xl font-extrabold text-blue-600 dark:text-blue-400">{overview?.services ?? 0}</div>
         </div>
         <div className="bg-white dark:bg-[#111827] p-4 rounded-xl border border-slate-200 dark:border-slate-800 space-y-1 shadow-sm">
           <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Namespaces</span>
-          <div className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400">{overview?.namespaces || 8}</div>
+          <div className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400">{overview?.namespaces ?? 0}</div>
         </div>
       </div>
 

@@ -6,6 +6,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.hamcrest.Matchers.hasSize;
 
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.Test;
@@ -49,6 +50,14 @@ class ApiSmokeTest {
             mockMvc.perform(get(path).header("Authorization", "Bearer " + token))
                     .andExpect(status().isOk());
         }
+        mockMvc.perform(get("/api/projects").header("Authorization", "Bearer " + token))
+                .andExpect(jsonPath("$", hasSize(3)));
+        mockMvc.perform(get("/api/kubernetes/services").header("Authorization", "Bearer " + token))
+                .andExpect(jsonPath("$", hasSize(3)));
+        mockMvc.perform(get("/api/monitoring/overview").header("Authorization", "Bearer " + token))
+                .andExpect(jsonPath("$.cpu", hasSize(10)));
+        mockMvc.perform(get("/api/dashboard").header("Authorization", "Bearer " + token))
+                .andExpect(jsonPath("$.projects").value(3));
 
         mockMvc.perform(get("/api/auth/me").header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())

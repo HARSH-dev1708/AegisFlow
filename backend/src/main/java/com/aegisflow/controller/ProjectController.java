@@ -1,9 +1,12 @@
 package com.aegisflow.controller;
 
+import com.aegisflow.domain.Deployment;
 import com.aegisflow.domain.Environment;
+import com.aegisflow.domain.Pipeline;
 import com.aegisflow.domain.Project;
 import com.aegisflow.domain.User;
 import com.aegisflow.repository.ContainerRepository;
+import com.aegisflow.repository.DeploymentRepository;
 import com.aegisflow.repository.EnvironmentRepository;
 import com.aegisflow.repository.KubernetesPodRepository;
 import com.aegisflow.repository.PipelineRepository;
@@ -40,6 +43,7 @@ public class ProjectController {
     private final ContainerRepository containerRepository;
     private final KubernetesPodRepository podRepository;
     private final VulnerabilityRepository vulnerabilityRepository;
+    private final DeploymentRepository deploymentRepository;
 
     public ProjectController(ProjectRepository projectRepository,
                              EnvironmentRepository environmentRepository,
@@ -47,7 +51,8 @@ public class ProjectController {
                              PipelineRepository pipelineRepository,
                              ContainerRepository containerRepository,
                              KubernetesPodRepository podRepository,
-                             VulnerabilityRepository vulnerabilityRepository) {
+                             VulnerabilityRepository vulnerabilityRepository,
+                             DeploymentRepository deploymentRepository) {
         this.projectRepository = projectRepository;
         this.environmentRepository = environmentRepository;
         this.userRepository = userRepository;
@@ -55,6 +60,7 @@ public class ProjectController {
         this.containerRepository = containerRepository;
         this.podRepository = podRepository;
         this.vulnerabilityRepository = vulnerabilityRepository;
+        this.deploymentRepository = deploymentRepository;
     }
 
     @GetMapping
@@ -110,8 +116,14 @@ public class ProjectController {
         response.put("status", project.getStatus());
         response.put("securityScore", Math.max(0, 100 - vulnerabilityRepository.countByProject_Id(project.getId()) * 5));
         response.put("repository", project.getRepositoryUrl());
-        response.put("branch", "main");
-        response.put("lastDeployment", "Not deployed");
+        response.put("branch", pipelineRepository.findAll().stream()
+                .filter(pipeline -> pipeline.getProject().getId().equals(project.getId()))
+                .max(java.util.Comparator.comparing(Pipeline::getCreatedAt))
+                .map(Pipeline::getBranch).orElse("--"));
+        response.put("lastDeployment", deploymentRepository.findAll().stream()
+                .filter(deployment -> deployment.getProject().getId().equals(project.getId()))
+                .max(java.util.Comparator.comparing(Deployment::getDeployedAt))
+                .map(deployment -> ApiResponses.time(deployment.getDeployedAt())).orElse("Not deployed"));
         response.put("containersCount", containerRepository.countByProject_Id(project.getId()));
         response.put("podsCount", podRepository.countByProject_Id(project.getId()));
         response.put("activePipelines", pipelineRepository.countByProject_IdAndStatusIgnoreCase(project.getId(), "RUNNING"));

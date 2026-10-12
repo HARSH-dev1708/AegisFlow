@@ -1,67 +1,18 @@
 import api from './api';
-import { mockMonitoringData } from '../data/mockData';
 
 export const monitoringApi = {
-  getOverview: async () => {
-    try {
-      const res = await api.get('/monitoring/overview');
-      return res.data;
-    } catch {
-      return mockMonitoringData;
-    }
-  },
-
-  getCpuMetrics: async (timeframe = '1H') => {
-    try {
-      const res = await api.get(`/monitoring/cpu?range=${timeframe}`);
-      return res.data;
-    } catch {
-      return mockMonitoringData.cpu;
-    }
-  },
-
-  getMemoryMetrics: async (timeframe = '1H') => {
-    try {
-      const res = await api.get(`/monitoring/memory?range=${timeframe}`);
-      return res.data;
-    } catch {
-      return mockMonitoringData.memory;
-    }
-  },
-
-  getNetworkMetrics: async (timeframe = '1H') => {
-    try {
-      const res = await api.get(`/monitoring/network?range=${timeframe}`);
-      return res.data;
-    } catch {
-      return mockMonitoringData.network;
-    }
-  },
-
-  getRequestMetrics: async (timeframe = '1H') => {
-    try {
-      const res = await api.get(`/monitoring/requests?range=${timeframe}`);
-      return res.data;
-    } catch {
-      return mockMonitoringData.requests;
-    }
-  },
-
-  getLatencyMetrics: async (timeframe = '1H') => {
-    try {
-      const res = await api.get(`/monitoring/latency?range=${timeframe}`);
-      return res.data;
-    } catch {
-      return mockMonitoringData.latency;
-    }
-  },
-
-  getErrorMetrics: async (timeframe = '1H') => {
-    try {
-      const res = await api.get(`/monitoring/errors?range=${timeframe}`);
-      return res.data;
-    } catch {
-      return mockMonitoringData.errors;
-    }
-  }
+  getOverview: async (timeframe = '1H') =>
+    (await api.get('/monitoring/overview', { params: { range: timeframe } })).data,
+  getCpuMetrics: async (timeframe = '1H') =>
+    (await api.get('/monitoring/cpu', { params: { range: timeframe } })).data,
+  getMemoryMetrics: async (timeframe = '1H') =>
+    (await api.get('/monitoring/memory', { params: { range: timeframe } })).data,
+  getNetworkMetrics: async (timeframe = '1H') =>
+    (await api.get('/monitoring/network', { params: { range: timeframe } })).data,
+  getRequestMetrics: async (timeframe = '1H') =>
+    (await api.get('/monitoring/requests', { params: { range: timeframe } })).data,
+  getLatencyMetrics: async (timeframe = '1H') =>
+    (await api.get('/monitoring/latency', { params: { range: timeframe } })).data,
+  getErrorMetrics: async (timeframe = '1H') =>
+    (await api.get('/monitoring/errors', { params: { range: timeframe } })).data,
 };
