@@ -24,6 +24,14 @@ public class Deployment {
     @Column(nullable = false, length = 30)
     private String status;
 
+    @Column(name = "docker_image", length = 200)
+    private String dockerImage;
+
+    @Column(length = 100)
+    private String namespace;
+
+    private Integer replicas;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "project_id", nullable = false)
     private Project project;
@@ -46,5 +54,13 @@ public class Deployment {
         this.environment = environment;
         this.deployedBy = deployedBy;
         this.deployedAt = LocalDateTime.now();
+    }
+
+    public Deployment(String version, String status, Project project, Environment environment, User deployedBy,
+                      String dockerImage, String namespace, Integer replicas) {
+        this(version, status, project, environment, deployedBy);
+        this.dockerImage = dockerImage;
+        this.namespace = namespace;
+        this.replicas = replicas;
     }
 }

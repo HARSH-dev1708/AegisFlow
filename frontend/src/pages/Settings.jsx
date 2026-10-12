@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { settingsApi } from '../services/settingsApi';
 import { Settings as SettingsIcon, ShieldCheck, Server, Save, User } from 'lucide-react';
 
 export const Settings = () => {
@@ -9,10 +10,25 @@ export const Settings = () => {
   const [enableWebhooks, setEnableWebhooks] = useState(true);
   const [saved, setSaved] = useState(false);
 
-  const handleSave = (e) => {
+  React.useEffect(() => {
+    settingsApi.getSettings()
+      .then((settings) => {
+        setApiUrl(settings.apiBaseUrl);
+        setEnableWebhooks(settings.webhooksEnabled);
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleSave = async (e) => {
     e.preventDefault();
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+    try {
+      const settings = await settingsApi.updateSettings({ apiBaseUrl: apiUrl, webhooksEnabled: enableWebhooks });
+      setEnableWebhooks(settings.webhooksEnabled);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch {
+      setSaved(false);
+    }
   };
 
   return (
