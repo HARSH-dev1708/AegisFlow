@@ -79,9 +79,18 @@ export const ProjectDetails = () => {
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-3">
                 <span>Env: <strong className="text-slate-900 dark:text-slate-200">{project.environment}</strong></span>
                 <span>•</span>
-                <span className="font-mono text-cyan-600 dark:text-cyan-400 flex items-center gap-1">
-                  <GitBranch className="w-3 h-3" /> {project.repository} ({project.branch || 'main'})
-                </span>
+                {project.repository ? (
+                  <a
+                    href={project.repository}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-mono text-cyan-600 dark:text-cyan-400 flex items-center gap-1 hover:underline"
+                  >
+                    <GitBranch className="w-3 h-3" /> {project.repository}
+                  </a>
+                ) : <span>No repository linked</span>}
+                <span>•</span>
+                <span>Latest deployment: <strong className="text-slate-900 dark:text-slate-200">{project.deploymentStatus}</strong></span>
               </p>
             </div>
           </div>
@@ -138,12 +147,12 @@ export const ProjectDetails = () => {
           <div className="bg-white dark:bg-[#111827] p-5 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2 shadow-sm">
             <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Containers Active</span>
             <div className="text-3xl font-extrabold text-cyan-600 dark:text-cyan-400">{project.containersCount ?? 0} Instances</div>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Docker image v1.8.2 running cleanly.</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Container count from this project&apos;s stored records.</p>
           </div>
           <div className="bg-white dark:bg-[#111827] p-5 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2 shadow-sm">
             <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Kubernetes Pods</span>
             <div className="text-3xl font-extrabold text-purple-600 dark:text-purple-400">{project.podsCount ?? 0} Replicas</div>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Ingress router healthy with 99.9% uptime.</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Pod count from this project&apos;s stored records.</p>
           </div>
         </div>
       )}

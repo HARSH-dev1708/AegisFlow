@@ -42,6 +42,12 @@ For a future PostgreSQL or MySQL deployment, provision the database and credenti
 
 Public registrations receive the `DEVELOPER` role. The optional bootstrap creates or promotes a configured account to `ADMIN` when `BOOTSTRAP_ADMIN_ENABLED=true`; configure its email and password only in a secret manager/environment. Access JWTs last 15 minutes. Refresh tokens are rotated, stored only as hashes in the database, and delivered in an HttpOnly cookie for seven days.
 
+### Project management
+
+Authenticated users can create projects; each new project is owned by the signed-in user. The owner or an administrator can update its name, description, repository URL, and linked environment, and can archive or restore it. Archiving preserves associated deployment and security history. `GET /api/projects` lists active projects; use `?archived=true` to list archived projects. `GET /api/environments` returns environment records available to link.
+
+Project health and deployment status are based on the latest stored deployment record (`SUCCESS` maps to `Healthy`, `FAILED` to `Degraded`, and `RUNNING` to `Deploying`). They are not live infrastructure health checks.
+
 ### Maven Parent overrides
 
 Due to Maven's design, elements are inherited from the parent POM to the project POM.

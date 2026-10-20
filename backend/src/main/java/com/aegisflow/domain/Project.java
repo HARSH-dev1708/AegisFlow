@@ -30,6 +30,9 @@ public class Project {
     @Column(nullable = false, length = 30)
     private String status;
 
+    @Column(nullable = false)
+    private boolean archived;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "environment_id", nullable = false)
     private Environment environment;
