@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.LinkedHashMap;
@@ -64,11 +65,22 @@ public class DashboardController {
                 vulnerability -> vulnerability.getSeverity().toUpperCase(), Collectors.counting()));
         Map<String, Long> pipelineCounts = pipelines.stream().collect(Collectors.groupingBy(
                 pipeline -> pipeline.getStatus().toUpperCase(), Collectors.counting()));
-        List<Map<String, Object>> deploymentActivity = deployments.stream()
-                .filter(deployment -> deployment.getDeployedAt().toLocalDate().equals(LocalDate.now()))
-                .collect(Collectors.groupingBy(deployment -> deployment.getDeployedAt().getHour(), Collectors.counting()))
-                .entrySet().stream().sorted(Map.Entry.comparingByKey())
-                .map(entry -> ApiResponses.map("time", String.format("%02d:00", entry.getKey()), "success", entry.getValue(), "failed", 0))
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime activityCutoff = now.minusHours(24);
+        Map<LocalDateTime, List<Deployment>> deploymentsByHour = deployments.stream()
+                .filter(deployment -> !deployment.getDeployedAt().isBefore(activityCutoff)
+                        && !deployment.getDeployedAt().isAfter(now))
+                .collect(Collectors.groupingBy(deployment -> deployment.getDeployedAt().truncatedTo(ChronoUnit.HOURS)));
+        List<Map<String, Object>> deploymentActivity = deploymentsByHour.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .map(entry -> ApiResponses.map(
+                        "time", entry.getKey().toLocalDate().equals(now.toLocalDate())
+                                ? String.format("%02d:00", entry.getKey().getHour())
+                                : entry.getKey().toLocalDate() + " " + String.format("%02d:00", entry.getKey().getHour()),
+                        "success", entry.getValue().stream()
+                                .filter(deployment -> "SUCCESS".equalsIgnoreCase(deployment.getStatus())).count(),
+                        "failed", entry.getValue().stream()
+                                .filter(deployment -> "FAILED".equalsIgnoreCase(deployment.getStatus())).count()))
                 .toList();
         List<Map<String, Object>> severityData = List.of("Critical", "High", "Medium", "Low").stream()
                 .map(severity -> ApiResponses.map("severity", severity,
@@ -78,9 +90,11 @@ public class DashboardController {
         List<Map<String, Object>> pipelineData = List.of(
                 ApiResponses.map("name", "Successful", "value", pipelineCounts.getOrDefault("SUCCESS", 0L), "color", "#10b981"),
                 ApiResponses.map("name", "Failed", "value", pipelineCounts.getOrDefault("FAILED", 0L), "color", "#f43f5e"),
-                ApiResponses.map("name", "Running", "value", pipelineCounts.getOrDefault("RUNNING", 0L), "color", "#06b6d4"));
+                ApiResponses.map("name", "Running", "value", pipelineCounts.getOrDefault("RUNNING", 0L), "color", "#06b6d4"),
+                ApiResponses.map("name", "Queued", "value", pipelineCounts.getOrDefault("QUEUED", 0L), "color", "#94a3b8"),
+                ApiResponses.map("name", "Cancelled", "value", pipelineCounts.getOrDefault("CANCELLED", 0L), "color", "#64748b"));
         return ApiResponses.map(
-                "projects", projects.size(),
+                "projects", projects.stream().filter(project -> !project.isArchived()).count(),
                 "activePipelines", pipelineCounts.getOrDefault("RUNNING", 0L) + pipelineCounts.getOrDefault("QUEUED", 0L),
                 "securityIssues", vulnerabilities.stream().filter(vulnerability -> !"RESOLVED".equalsIgnoreCase(vulnerability.getStatus())).count(),
                 "runningContainers", containerRepository.countByStatusIgnoreCase("Running"),

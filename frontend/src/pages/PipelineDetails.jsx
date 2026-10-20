@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { pipelineApi } from '../services/pipelineApi';
 import { StatusBadge } from '../components/common/StatusBadge';
@@ -24,23 +24,41 @@ export const PipelineDetails = () => {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [actionError, setActionError] = useState('');
+
+  const fetchData = useCallback(async () => {
+    try {
+      const [pipe, logData] = await Promise.all([
+        pipelineApi.getPipelineById(id),
+        pipelineApi.getPipelineLogs(id),
+      ]);
+      setPipeline(pipe);
+      setLogs(logData);
+      setError(null);
+    } catch (err) {
+      setError(err.response?.data?.detail || err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [id]);
 
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const pipe = await pipelineApi.getPipelineById(id);
-        setPipeline(pipe);
-        const logData = await pipelineApi.getPipelineLogs(id);
-        setLogs(logData);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchData();
-  }, [id]);
+    const isActive = !pipeline || ['Queued', 'Running'].includes(pipeline.status);
+    if (!isActive) return undefined;
+    const interval = window.setInterval(fetchData, 5000);
+    return () => window.clearInterval(interval);
+  }, [fetchData, pipeline?.status]);
+
+  const handleRerun = async () => {
+    setActionError('');
+    try {
+      const run = await pipelineApi.retryPipeline(pipeline.id);
+      navigate(`/pipelines/${run.id}`);
+    } catch (err) {
+      setActionError(err.response?.data?.detail || err.message || 'Could not create a new run');
+    }
+  };
 
   if (loading) return <SkeletonLoader count={4} type="card" />;
   if (error || !pipeline) return <ErrorState message={error || 'Pipeline not found'} onRetry={() => navigate('/pipelines')} />;
@@ -73,13 +91,15 @@ export const PipelineDetails = () => {
                 <span className="flex items-center gap-1"><User className="w-3 h-3" /> {pipeline.author}</span>
                 <span>•</span>
                 <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> Total Duration: {pipeline.duration}</span>
+                <span>•</span>
+                <span>Triggered by {pipeline.triggerSource}</span>
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
             <button
-              onClick={() => pipelineApi.retryPipeline(pipeline.id).then(() => window.location.reload())}
+              onClick={handleRerun}
               className="flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs font-semibold shadow-sm"
             >
               <RotateCcw className="w-4 h-4" />
@@ -87,6 +107,12 @@ export const PipelineDetails = () => {
             </button>
           </div>
         </div>
+        {actionError && <p role="alert" className="text-rose-600 dark:text-rose-300 text-xs">{actionError}</p>}
+        {pipeline.status === 'Queued' && (
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            This run is waiting for an authenticated runner to report stage updates. AegisFlow records runs but does not execute build jobs.
+          </p>
+        )}
 
         {/* Detailed Stages Grid */}
         <div className="pt-4 border-t border-slate-200 dark:border-slate-800">
@@ -99,7 +125,7 @@ export const PipelineDetails = () => {
 
               return (
                 <div
-                  key={stage.name}
+                  key={stage.id}
                   className={`p-3 rounded-xl border flex flex-col justify-between text-xs space-y-2 ${
                     isPassed ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-500/30' :
                     isRunning ? 'bg-cyan-50 dark:bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border-cyan-300 dark:border-cyan-500/40 animate-pulse' :
@@ -144,10 +170,7 @@ export const PipelineDetails = () => {
               <span>{line}</span>
             </div>
           ))}
-          <div className="text-cyan-400 font-semibold pt-2 flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
-            [INFO] Pipeline step monitor active...
-          </div>
+          {logs.length === 0 && <div className="text-slate-500">Waiting for authenticated runner logs.</div>}
         </div>
       </div>
     </div>

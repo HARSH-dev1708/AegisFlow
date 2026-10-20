@@ -48,6 +48,12 @@ Authenticated users can create projects; each new project is owned by the signed
 
 Project health and deployment status are based on the latest stored deployment record (`SUCCESS` maps to `Healthy`, `FAILED` to `Degraded`, and `RUNNING` to `Deploying`). They are not live infrastructure health checks.
 
+### Pipeline run tracking
+
+Pipeline records are individual runs. `POST /api/pipelines` creates a manual run and `POST /api/pipelines/webhook` records a webhook-triggered run; both require an authenticated bearer token. Runs start `QUEUED` with pending stages. A CI runner can report each stage through `PATCH /api/pipelines/{runId}/stages/{stageId}` with `{"status":"RUNNING"}`, followed by `PASSED`, `FAILED`, or `SKIPPED`. Stages are processed sequentially; a failed stage fails the run and skips later pending stages. `POST /api/pipelines/{runId}/logs` appends persisted console output. These runner callback routes also require authentication.
+
+This feature records runs and results; it does not execute builds or deploy code. No CI provider/webhook signature integration is configured yet. Pipeline distributions count stored run records. Dashboard deployment activity groups stored deployment results over the last 24 hours.
+
 ### Maven Parent overrides
 
 Due to Maven's design, elements are inherited from the parent POM to the project POM.

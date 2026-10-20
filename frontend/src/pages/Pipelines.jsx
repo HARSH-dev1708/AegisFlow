@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { pipelineApi } from '../services/pipelineApi';
+import { projectApi } from '../services/projectApi';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { SkeletonLoader } from '../components/common/SkeletonLoader';
 import { ErrorState } from '../components/common/ErrorState';
@@ -20,33 +21,53 @@ import {
 export const Pipelines = () => {
   const navigate = useNavigate();
   const [pipelines, setPipelines] = useState([]);
+  const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showTriggerForm, setShowTriggerForm] = useState(false);
+  const [triggerError, setTriggerError] = useState('');
+  const [triggering, setTriggering] = useState(false);
+  const [triggerForm, setTriggerForm] = useState({ projectId: '', branch: 'main', commit: '' });
 
-  const fetchPipelines = async () => {
-    setLoading(true);
-    setError(null);
+  const fetchPipelines = useCallback(async () => {
     try {
-      const data = await pipelineApi.getPipelines();
-      setPipelines(data);
+      const [pipelineData, projectData] = await Promise.all([
+        pipelineApi.getPipelines(),
+        projectApi.getProjects(),
+      ]);
+      setPipelines(pipelineData);
+      setProjects(projectData);
+      setError(null);
     } catch (err) {
       setError(err.message || 'Failed to fetch pipelines');
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchPipelines();
-  }, []);
+    const interval = window.setInterval(fetchPipelines, 5000);
+    return () => window.clearInterval(interval);
+  }, [fetchPipelines]);
 
-  const handleRun = async (id, e) => {
-    e.stopPropagation();
+  const handleTrigger = async (event) => {
+    event.preventDefault();
+    setTriggering(true);
+    setTriggerError('');
     try {
-      await pipelineApi.runPipeline(id);
-      fetchPipelines();
+      const run = await pipelineApi.createPipeline({
+        projectId: Number(triggerForm.projectId),
+        branch: triggerForm.branch,
+        commit: triggerForm.commit,
+      });
+      setShowTriggerForm(false);
+      setTriggerForm({ projectId: '', branch: 'main', commit: '' });
+      navigate(`/pipelines/${run.id}`);
     } catch (err) {
-      alert('Error starting pipeline: ' + err.message);
+      setTriggerError(err.response?.data?.detail || err.message || 'Could not create pipeline run');
+    } finally {
+      setTriggering(false);
     }
   };
 
@@ -54,7 +75,7 @@ export const Pipelines = () => {
     e.stopPropagation();
     try {
       await pipelineApi.cancelPipeline(id);
-      fetchPipelines();
+      await fetchPipelines();
     } catch (err) {
       alert('Error cancelling pipeline: ' + err.message);
     }
@@ -63,8 +84,8 @@ export const Pipelines = () => {
   const handleRetry = async (id, e) => {
     e.stopPropagation();
     try {
-      await pipelineApi.retryPipeline(id);
-      fetchPipelines();
+      const run = await pipelineApi.retryPipeline(id);
+      navigate(`/pipelines/${run.id}`);
     } catch (err) {
       alert('Error retrying pipeline: ' + err.message);
     }
@@ -79,20 +100,76 @@ export const Pipelines = () => {
         <div>
           <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
             <GitPullRequest className="w-6 h-6 text-cyan-600 dark:text-cyan-400" />
-            DevSecOps Pipeline Engine
+            Pipeline Run Tracking
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Automated CI/CD workflows with built-in SAST, container security scanning & K8s deployment.
+            Track CI runner callbacks, stage results, durations, and persisted build logs.
           </p>
         </div>
         <button
-          onClick={() => pipelineApi.createPipeline({ projectName: 'Aegis API', branch: 'main' }).then(fetchPipelines)}
+          onClick={() => { setTriggerError(''); setShowTriggerForm(true); }}
+          disabled={projects.length === 0}
           className="flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs font-semibold shadow-md transition-all"
         >
           <Play className="w-4 h-4 fill-white" />
-          Trigger New Pipeline
+          Create Manual Run
         </button>
       </div>
+
+      {projects.length === 0 && (
+        <p className="text-xs text-slate-500 dark:text-slate-400">
+          Create an active project before creating a pipeline run.
+        </p>
+      )}
+
+      {showTriggerForm && (
+        <div className="bg-white dark:bg-[#111827] p-5 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-4">
+          <h2 className="font-bold text-slate-900 dark:text-white">Create manual run</h2>
+          {triggerError && <p role="alert" className="text-rose-600 dark:text-rose-300 text-xs">{triggerError}</p>}
+          <form onSubmit={handleTrigger} className="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <select
+              required
+              value={triggerForm.projectId}
+              onChange={(event) => setTriggerForm({ ...triggerForm, projectId: event.target.value })}
+              className="p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs"
+            >
+              <option value="">Select project</option>
+              {projects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}
+            </select>
+            <input
+              required
+              maxLength={100}
+              value={triggerForm.branch}
+              onChange={(event) => setTriggerForm({ ...triggerForm, branch: event.target.value })}
+              placeholder="Branch"
+              className="p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs"
+            />
+            <input
+              maxLength={50}
+              value={triggerForm.commit}
+              onChange={(event) => setTriggerForm({ ...triggerForm, commit: event.target.value })}
+              placeholder="Commit (optional)"
+              className="p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs"
+            />
+            <div className="flex gap-2">
+              <button
+                type="submit"
+                disabled={triggering || !triggerForm.projectId}
+                className="px-4 py-2 bg-cyan-600 text-white rounded-xl text-xs font-semibold disabled:opacity-50"
+              >
+                {triggering ? 'Creating...' : 'Create Run'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowTriggerForm(false)}
+                className="px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       <div className="space-y-4">
         {pipelines.map((pipe) => (
@@ -113,6 +190,9 @@ export const Pipelines = () => {
                       {pipe.projectName}
                     </span>
                     <StatusBadge status={pipe.status} />
+                    <span className="px-2 py-0.5 rounded-full border border-slate-200 dark:border-slate-700 text-[10px] uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      {pipe.triggerSource}
+                    </span>
                   </div>
                   <div className="flex items-center gap-3 text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                     <span>Branch: <strong className="text-slate-700 dark:text-slate-200">{pipe.branch}</strong> ({pipe.commit})</span>
@@ -126,7 +206,7 @@ export const Pipelines = () => {
 
               {/* Action Buttons */}
               <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                {pipe.status === 'Running' ? (
+                {['Running', 'Queued'].includes(pipe.status) ? (
                   <button
                     onClick={(e) => handleCancel(pipe.id, e)}
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 dark:bg-rose-500/10 hover:bg-rose-100 dark:hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-500/30 rounded-lg text-xs font-medium"

@@ -41,6 +41,8 @@ public class PipelineStage {
         this.name = name;
         this.status = status;
         this.pipeline = pipeline;
-        this.startedAt = LocalDateTime.now();
+        if ("RUNNING".equalsIgnoreCase(status)) {
+            this.startedAt = LocalDateTime.now();
+        }
     }
 }
