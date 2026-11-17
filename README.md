@@ -3,8 +3,8 @@
 AegisFlow automatically provisions isolated `nginx:alpine` Docker preview environments on dynamic host ports (`8101–8150`) whenever a GitHub Pull Request is opened or updated, and destroys them automatically upon merge or closure.
 
 ## Team
-- **Harsh Kumar** (202401100200149)
-- **Yogesh Verma**
+- **Harsh Kumar** (CSE 5-C, 202401100200149)
+- **Naman Jadiya** (CSE 5-C 202401100200208)
 
 ## Architecture
 - **Ingress & Security**: GitHub Pull Request Webhooks (`HMAC-SHA256` verified) tunneled via Cloudflare Tunnel (`cloudflared`).
