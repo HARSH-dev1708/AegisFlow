@@ -1,0 +1,5 @@
+﻿node_modules/
+.env
+backend/previews/
+dist/
+.DS_Store
