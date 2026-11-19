@@ -1,12 +1,13 @@
 ﻿import Docker from 'dockerode';
 import fs from 'fs';
 import path from 'path';
-import { execFile } from 'child_process';
+import { exec, execFile } from 'child_process';
 import { promisify } from 'util';
 import { fileURLToPath } from 'url';
 import Environment from '../models/Environment.js';
 
 const execFileAsync = promisify(execFile);
+const execAsync = promisify(exec);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -56,14 +57,7 @@ async function generatePreviewBundle({ prNumber, repoFullName, prTitle, branch, 
           !fs.existsSync(path.join(appDir, 'dist', 'index.html')) &&
           !fs.existsSync(path.join(appDir, 'build', 'index.html'))
         ) {
-          await execFileAsync(NPM_CMD, ['install', '--prefer-offline', '--no-audit'], {
-            cwd: appDir,
-            timeout: 90000,
-          });
-          await execFileAsync(NPM_CMD, ['run', 'build'], {
-            cwd: appDir,
-            timeout: 90000,
-          });
+          await execAsync('npm install --prefer-offline --no-audit && npm run build', { cwd: appDir, timeout: 120000 });
         }
 
         if (fs.existsSync(path.join(appDir, 'dist', 'index.html'))) {
@@ -125,7 +119,7 @@ export async function provisionEnvironment({ prNumber, repoFullName, prTitle, br
   });
 
   if (existing) {
-    await generatePreviewBundle({
+    const mountDir = await generatePreviewBundle({
       prNumber,
       repoFullName,
       prTitle,
@@ -136,9 +130,31 @@ export async function provisionEnvironment({ prNumber, repoFullName, prTitle, br
       isSimulated,
     });
 
-    const container = docker.getContainer(existing.containerId);
-    await container.restart();
+    try {
+      const oldContainer = docker.getContainer(existing.containerId);
+      await oldContainer.stop().catch(() => {});
+      await oldContainer.remove({ force: true });
+    } catch {}
 
+    const newContainer = await docker.createContainer({
+      Image: 'nginx:alpine',
+      name: existing.containerName,
+      ExposedPorts: { '80/tcp': {} },
+      HostConfig: {
+        PortBindings: {
+          '80/tcp': [{ HostPort: String(existing.port) }],
+        },
+        Binds: [`${mountDir}:/usr/share/nginx/html:ro`],
+      },
+      Labels: {
+        'managed-by': 'aegisflow',
+        'pr-number': String(prNumber),
+        repo: repoFullName,
+      },
+    });
+    await newContainer.start();
+
+    existing.containerId = newContainer.id;
     existing.prTitle = prTitle;
     existing.commitSha = commitSha;
     existing.status = 'RUNNING';
@@ -223,4 +239,9 @@ export async function destroyEnvironment({ prNumber, repoFullName }) {
 
   return existing;
 }
+
+
+
+
+
 
