@@ -48,9 +48,13 @@ async function generatePreviewBundle({ prNumber, repoFullName, prTitle, branch, 
       });
       fs.rmSync(path.join(previewDir, '.git'), { recursive: true, force: true });
 
-      const appDir = fs.existsSync(path.join(previewDir, 'frontend', 'package.json'))
-        ? path.join(previewDir, 'frontend')
-        : previewDir;
+      const subDirs = fs.readdirSync(previewDir, { withFileTypes: true })
+        .filter((d) => d.isDirectory() && !d.name.startsWith('.'))
+        .map((d) => path.join(previewDir, d.name));
+      const matchedSubDir = subDirs.find((dir) => fs.existsSync(path.join(dir, 'package.json')));
+      const appDir = fs.existsSync(path.join(previewDir, 'package.json'))
+        ? previewDir
+        : matchedSubDir || previewDir;
 
       if (fs.existsSync(path.join(appDir, 'package.json'))) {
         if (
@@ -239,6 +243,7 @@ export async function destroyEnvironment({ prNumber, repoFullName }) {
 
   return existing;
 }
+
 
 
 
