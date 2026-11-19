@@ -31,7 +31,7 @@ async function findAvailablePort() {
   throw new Error(`No available ports in range ${startPort}-${endPort}`);
 }
 
-async function generatePreviewBundle({ prNumber, repoFullName, prTitle, branch, commitSha, author, port }) {
+async function generatePreviewBundle({ prNumber, repoFullName, prTitle, branch, commitSha, author, port, isSimulated = false }) {
   const folderName = `pr-${prNumber}-${repoFullName.replace(/[^a-zA-Z0-9]/g, '-')}`;
   const previewDir = path.join(PREVIEWS_ROOT, folderName);
 
@@ -39,7 +39,7 @@ async function generatePreviewBundle({ prNumber, repoFullName, prTitle, branch, 
   fs.mkdirSync(previewDir, { recursive: true });
 
   // Only clone and build for real GitHub webhooks (skip local dashboard simulator payloads)
-  if (!String(commitSha).startsWith('sim-')) {
+  if (!isSimulated) {
     try {
       const repoUrl = `https://github.com/${repoFullName}.git`;
       await execFileAsync('git', ['clone', '--depth', '1', '--branch', branch, repoUrl, previewDir], {
@@ -117,7 +117,7 @@ async function generatePreviewBundle({ prNumber, repoFullName, prTitle, branch, 
   return previewDir;
 }
 
-export async function provisionEnvironment({ prNumber, repoFullName, prTitle, branch, commitSha, author }) {
+export async function provisionEnvironment({ prNumber, repoFullName, prTitle, branch, commitSha, author, isSimulated = false }) {
   const existing = await Environment.findOne({
     repoFullName,
     prNumber,
@@ -133,6 +133,7 @@ export async function provisionEnvironment({ prNumber, repoFullName, prTitle, br
       commitSha,
       author,
       port: existing.port,
+      isSimulated,
     });
 
     const container = docker.getContainer(existing.containerId);
@@ -157,6 +158,7 @@ export async function provisionEnvironment({ prNumber, repoFullName, prTitle, br
     commitSha,
     author,
     port,
+    isSimulated,
   });
 
   const container = await docker.createContainer({
@@ -221,3 +223,4 @@ export async function destroyEnvironment({ prNumber, repoFullName }) {
 
   return existing;
 }
+

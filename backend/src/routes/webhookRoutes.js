@@ -42,6 +42,7 @@ async function handlePullRequestEvent({ action, pull_request, repository, source
 
   if (action === 'opened' || action === 'reopened' || action === 'synchronize') {
     const { environment, action: dockerAction } = await provisionEnvironment({
+      isSimulated: source === 'SIMULATOR',
       prNumber,
       repoFullName,
       prTitle,
@@ -117,7 +118,7 @@ router.post('/github', async (req, res) => {
       pull_request: req.body.pull_request,
       repository: req.body.repository,
       source: 'GITHUB_WEBHOOK',
-    });
+    }, !req.headers['x-github-delivery']);
 
     return res.status(200).json(result);
   } catch (err) {
@@ -146,7 +147,7 @@ router.post('/simulate', async (req, res) => {
     const result = await handlePullRequestEvent({
       action,
       pull_request: {
-        number: Number(prNumber),
+        number: Number(prNumber, !req.headers['x-github-delivery']),
         title: prTitle,
         merged: action === 'closed',
         head: {
@@ -167,3 +168,4 @@ router.post('/simulate', async (req, res) => {
 });
 
 export default router;
+
